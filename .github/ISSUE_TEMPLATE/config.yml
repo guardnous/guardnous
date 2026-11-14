@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/guardnous/guardnous/security/advisories/new
+    about: Please do not open a public issue for a vulnerability. Report it privately here.
+  - name: 📖 What has been verified
+    url: https://github.com/guardnous/guardnous/blob/main/docs/status.md
+    about: Which integrations have been run against the real service, and which still need a tester.

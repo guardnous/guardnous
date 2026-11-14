@@ -1,0 +1,72 @@
+name: 🧪 Integration verification report
+description: You tried an integration against the real service. Tell us what happened, whether it worked or not.
+title: "Verification: <service>"
+labels: [help wanted]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. A report that says "it worked" is as useful as one that says "it failed":
+        it is what moves an integration to **Verified** in [docs/status.md](https://github.com/guardnous/guardnous/blob/main/docs/status.md).
+        Please use a test account or test repository, never production, and remove tokens, account numbers and host names from anything you paste.
+  - type: dropdown
+    id: service
+    attributes:
+      label: Which integration did you try?
+      options:
+        - GitLab
+        - Bitbucket
+        - Azure DevOps
+        - GitHub (webhooks or GitHub App)
+        - Azure (cloud account)
+        - Google Cloud (cloud account)
+        - AWS (fixes and rollback, or all regions)
+        - Slack
+        - Model provider (OpenAI, Azure OpenAI, Anthropic, Ollama)
+        - Kubernetes (Helm chart)
+        - Install on Linux or Windows (WSL)
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options:
+        - Everything I tried worked
+        - Some things worked
+        - It did not work
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What you tried
+      description: The steps, in order. For example - connected with a token, listed repositories, ran an assessment, opened a fix pull request.
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: What worked, what failed, and any error message shown in the UI.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: GuardNous version
+      placeholder: release tag or commit SHA
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Where it ran
+      placeholder: e.g. Ubuntu 24.04, Docker 27, Compose 2.29; GitLab.com or self-managed 17.x
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: From `docker compose logs api celery-worker`. Remove secrets first.
+      render: shell
