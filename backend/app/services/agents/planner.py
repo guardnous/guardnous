@@ -42,7 +42,7 @@ class PlanState:
 
         Returns True if the call is a stall (repeated identical call).
         """
-        h = hashlib.md5(f"{tool_name}:{sorted(args.items()) if args else ''}".encode()).hexdigest()
+        h = hashlib.md5(f"{tool_name}:{sorted(args.items()) if args else ''}".encode(), usedforsecurity=False).hexdigest()
         if h in self._call_hashes[-5:]:
             self.stall_count += 1
             if self.stall_count >= self.max_stall:

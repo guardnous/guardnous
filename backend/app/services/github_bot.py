@@ -241,7 +241,7 @@ def _short_hash(fixes: list[AutoFixFile]) -> str:
     import hashlib
 
     content = "|".join(f.path for f in fixes)
-    return hashlib.sha1(content.encode()).hexdigest()[:8]
+    return hashlib.sha1(content.encode(), usedforsecurity=False).hexdigest()[:8]
 
 
 def _build_pr_body(fixes: list[AutoFixFile]) -> str:

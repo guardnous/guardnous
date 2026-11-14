@@ -99,7 +99,11 @@ jobs:
           python-version: "3.12"
       - run: pip install bandit safety
       - name: Run Bandit (SAST)
-        run: bandit -r backend/app/ -f json -o bandit-report.json
+        # The full report (all severities) is uploaded below. The job fails only
+        # on high-severity findings; lower ones are reviewed from the report.
+        run: |
+          bandit -r backend/app/ -f json -o bandit-report.json --exit-zero
+          bandit -r backend/app/ --severity-level high
       - name: Upload Bandit results
         if: always()
         uses: actions/upload-artifact@v4

@@ -753,7 +753,7 @@ export default function CloudAccountsPage() {
                                 <p className="font-medium">Create a cross-account IAM Role:</p>
                                 <ol className="list-decimal list-inside space-y-1 text-xs">
                                   <li>Go to IAM → Roles → Create Role</li>
-                                  <li>Choose "Another AWS Account" and enter GuardNous Account ID</li>
+                                  <li>Choose &quot;Another AWS Account&quot; and enter GuardNous Account ID</li>
                                   <li>Attach policies: <code className="px-1 py-0.5 bg-blue-500/10 rounded">SecurityAudit</code> and <code className="px-1 py-0.5 bg-blue-500/10 rounded">ViewOnlyAccess</code></li>
                                   <li>Set an External ID for additional security (optional)</li>
                                   <li>Copy the Role ARN</li>
@@ -764,7 +764,7 @@ export default function CloudAccountsPage() {
                                 <p className="font-medium">Create an IAM User with programmatic access:</p>
                                 <ol className="list-decimal list-inside space-y-1 text-xs">
                                   <li>Go to IAM → Users → Create User</li>
-                                  <li>Enable "Access key - Programmatic access"</li>
+                                  <li>Enable &quot;Access key - Programmatic access&quot;</li>
                                   <li>Attach policies: <code className="px-1 py-0.5 bg-blue-500/10 rounded">SecurityAudit</code> and <code className="px-1 py-0.5 bg-blue-500/10 rounded">ViewOnlyAccess</code></li>
                                   <li>Save the Access Key ID and Secret Access Key securely</li>
                                 </ol>
@@ -835,7 +835,7 @@ export default function CloudAccountsPage() {
                             <p className="font-medium">Create an App Registration (Service Principal):</p>
                             <ol className="list-decimal list-inside space-y-1 text-xs">
                               <li>Go to <strong>Azure Active Directory → App Registrations → New Registration</strong></li>
-                              <li>Name it "GuardNous Security Scanner" and register</li>
+                              <li>Name it &quot;GuardNous Security Scanner&quot; and register</li>
                               <li>Copy the <strong>Application (Client) ID</strong> and <strong>Directory (Tenant) ID</strong></li>
                               <li>Go to <strong>Certificates & Secrets → New Client Secret</strong> — copy the value</li>
                               <li>Go to the target <strong>Subscription → Access Control (IAM) → Add Role Assignment</strong></li>
@@ -903,7 +903,7 @@ export default function CloudAccountsPage() {
                             <p className="font-medium">Create a Service Account with Viewer role:</p>
                             <ol className="list-decimal list-inside space-y-1 text-xs">
                               <li>Go to <strong>IAM & Admin → Service Accounts → Create Service Account</strong></li>
-                              <li>Name it "guardnous-scanner" and grant the <strong>Viewer</strong> role</li>
+                              <li>Name it &quot;guardnous-scanner&quot; and grant the <strong>Viewer</strong> role</li>
                               <li>Optionally add <strong>Cloud Asset Viewer</strong> for inventory data</li>
                               <li>Go to <strong>Keys → Add Key → Create new key → JSON</strong></li>
                               <li>Download the JSON key file and paste its contents below</li>

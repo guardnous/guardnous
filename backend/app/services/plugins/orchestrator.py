@@ -198,4 +198,4 @@ class ScanOrchestrator:
 def _finding_key(f: ScanResult) -> str:
     """Stable dedup key for a finding."""
     raw = f"{f.rule_id}|{f.file_path}|{f.line_number}|{f.resource_name}"
-    return hashlib.md5(raw.encode()).hexdigest()
+    return hashlib.md5(raw.encode(), usedforsecurity=False).hexdigest()
