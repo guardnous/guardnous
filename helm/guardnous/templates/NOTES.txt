@@ -1,0 +1,49 @@
+GuardNous has been deployed.
+
+This chart has been reviewed but not yet tested on a cluster.
+{{ if .Values.ingress.enabled }}
+Open the application at:
+  {{ include "guardnous.publicUrl" . }}
+
+The web image must have been built with this address as the API address:
+  ./scripts/build-images.sh --api-url {{ include "guardnous.publicUrl" . }} ...
+{{- else }}
+Forward the two services (the web image built with the default settings
+calls the API on http://localhost:7002):
+  kubectl port-forward svc/{{ include "guardnous.fullname" . }}-web 7003:{{ .Values.web.port }} -n {{ .Release.Namespace }}
+  kubectl port-forward svc/{{ include "guardnous.fullname" . }}-api 7002:{{ .Values.api.port }} -n {{ .Release.Namespace }}
+
+Then open:
+  Web UI:   http://localhost:7003
+  API docs: http://localhost:7002/docs   (not served when config.environment is production)
+{{- end }}
+
+First login:
+{{- if .Values.config.seedAdmin }}
+  Email:    admin@guardnous.com
+{{- if or .Values.secrets.initialAdminPassword .Values.secrets.existingSecret }}
+  Password: the INITIAL_ADMIN_PASSWORD you provided (secrets.initialAdminPassword or your
+            existing Secret). If the Secret has none, see the generated one as below.
+{{- else }}
+  Password: generated when the account was created and printed once:
+    kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/component=api -c prepare-database --tail=-1 | grep -A 6 "INITIAL ADMIN PASSWORD"
+{{- end }}
+  The password applies only when the account is first created. Change it after the first login.
+{{- else }}
+  No administrator account is created (config.seedAdmin is false).
+  Sign up at {{ include "guardnous.frontendUrl" . }}/register to create the first account.
+{{- end }}
+
+Components deployed:
+  ✅ API Server     ({{ .Values.api.replicaCount }} replica{{- if gt (int .Values.api.replicaCount) 1 }}s{{- end }})
+  ✅ Web Frontend   ({{ .Values.web.replicaCount }} replica{{- if gt (int .Values.web.replicaCount) 1 }}s{{- end }})
+  ✅ Celery Worker  ({{ .Values.worker.replicaCount }} replica{{- if gt (int .Values.worker.replicaCount) 1 }}s{{- end }})
+{{- if .Values.beat.enabled }}
+  ✅ Celery Beat    (1 replica)
+{{- end }}
+{{- if .Values.database.bundled.enabled }}
+  ✅ PostgreSQL     (bundled — dev only)
+{{- end }}
+{{- if .Values.redis.bundled.enabled }}
+  ✅ Redis          (bundled — dev only)
+{{- end }}

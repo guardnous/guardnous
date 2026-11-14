@@ -1,0 +1,60 @@
+# ─────────────────────────────────────────────────────────────
+# GuardNous .dockerignore
+# ─────────────────────────────────────────────────────────────
+.git
+.github
+.gitignore
+.dockerignore
+
+# Environment & Secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+.venv
+venv
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+.coverage
+
+# Node
+node_modules
+.next
+.turbo
+out
+coverage
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation (not needed in images)
+*.md
+!README.md
+docs/
+LICENSE
+
+# Tests & Dev
+tests/
+qa-tests/
+e2e/
+test-results/
+api_test_*.py
+.test_token_*
+
+# Misc
+*.bak
+*.tmp
+*.log

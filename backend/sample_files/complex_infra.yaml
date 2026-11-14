@@ -1,0 +1,271 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Complex multi-tier production infrastructure with security issues
+
+Parameters:
+  Environment:
+    Type: String
+    Default: production
+  DBPassword:
+    Type: String
+    Default: Pr0duct10n_DB_P@ss!
+    NoEcho: true
+
+Resources:
+  # === NETWORKING ===
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: true
+
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: us-east-1b
+      MapPublicIpOnLaunch: true
+
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.10.0/24
+      MapPublicIpOnLaunch: false
+
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Web tier security group
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Database security group
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          CidrIp: 0.0.0.0/0
+
+  # === STORAGE ===
+  AppAssetsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub corp-assets-${Environment}
+      AccessControl: PublicRead
+
+  CustomerDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub corp-customer-${Environment}
+      AccessControl: PublicReadWrite
+
+  BackupBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub corp-backups-${Environment}
+      AccessControl: Private
+
+  # === DATABASES ===
+  ProductionDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub prod-mysql-${Environment}
+      Engine: mysql
+      EngineVersion: '8.0'
+      DBInstanceClass: db.r6g.xlarge
+      AllocatedStorage: 500
+      MasterUsername: admin
+      MasterUserPassword: Pr0duct10n_P@ssw0rd!
+      PubliclyAccessible: true
+      StorageEncrypted: false
+      MultiAZ: false
+      BackupRetentionPeriod: 0
+
+  AnalyticsDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: analytics-postgres
+      Engine: postgres
+      DBInstanceClass: db.r6g.large
+      MasterUsername: analytics_admin
+      MasterUserPassword: An@lyt1cs_Secr3t_2024
+      PubliclyAccessible: true
+      StorageEncrypted: false
+
+  CacheCluster:
+    Type: AWS::ElastiCache::CacheCluster
+    Properties:
+      ClusterName: prod-cache
+      Engine: redis
+      CacheNodeType: cache.r6g.large
+      NumCacheNodes: 1
+
+  # === COMPUTE ===
+  WebServerA:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.xlarge
+      ImageId: ami-0abcdef1234567890
+      SecurityGroupIds:
+        - !Ref WebSecurityGroup
+      SubnetId: !Ref PublicSubnetA
+
+  WebServerB:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.xlarge
+      ImageId: ami-0abcdef1234567890
+      SecurityGroupIds:
+        - !Ref WebSecurityGroup
+      SubnetId: !Ref PublicSubnetB
+
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MinSize: 2
+      MaxSize: 10
+      VPCZoneIdentifier:
+        - !Ref PublicSubnetA
+        - !Ref PublicSubnetB
+
+  # === STORAGE VOLUMES ===
+  DataVolume:
+    Type: AWS::EC2::Volume
+    Properties:
+      AvailabilityZone: us-east-1a
+      Size: 500
+      Encrypted: false
+
+  BackupVolume:
+    Type: AWS::EC2::Volume
+    Properties:
+      AvailabilityZone: us-east-1b
+      Size: 1000
+      Encrypted: false
+
+  # === MESSAGING ===
+  OrderQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: production-orders
+
+  NotificationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: production-notifications
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: system-alerts
+
+  # === IAM ===
+  AdminRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: admin-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: GodMode
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: '*'
+                Resource: '*'
+
+  ServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: service-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3FullAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 's3:*'
+                Resource: '*'
+
+  # === DYNAMODB ===
+  UserTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: prod-users
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: false
+
+  OrderTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: prod-orders
+      AttributeDefinitions:
+        - AttributeName: orderId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: orderId
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: false
+
+Outputs:
+  VPCID:
+    Value: !Ref VPC
+  DBEndpoint:
+    Value: !GetAtt ProductionDB.Endpoint.Address

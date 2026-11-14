@@ -1,0 +1,42 @@
+# .guardnous.yml - GuardNous Repository Scan Configuration
+# Place this file at the root of any repository connected to GuardNous.
+# If absent, sensible defaults are used (scan everything, fail on critical).
+#
+# JSON Schema: GET /api/v1/integrations/ci/config-schema
+
+version: 1
+
+scan:
+  on_push: true
+  on_pr: true
+  branches:
+    - main
+    - develop
+    - "release/*"
+  exclude_paths:
+    - "vendor/**"
+    - "node_modules/**"
+    - "**/*.test.ts"
+    - "docs/**"
+
+policy:
+  fail_on: high
+  max_risk_score: 70
+  block_pr: true
+
+scanners:
+  iac:
+    enabled: true
+    frameworks: [terraform, cloudformation, bicep, kubernetes]
+  secrets:
+    enabled: true
+  sast:
+    enabled: false
+  dependencies:
+    enabled: true
+
+ignore:
+  - rule_id: CKV_AWS_18
+    reason: "Accepted risk - S3 logging not needed for dev"
+    expires: "2026-12-31"
+    approved_by: security-team

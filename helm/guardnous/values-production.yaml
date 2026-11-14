@@ -1,0 +1,112 @@
+# ============================================================
+# GuardNous — Production Deployment Example
+# ============================================================
+# Usage:
+#   helm install guardnous ./helm/guardnous \
+#     -f helm/guardnous/values-production.yaml \
+#     -n guardnous --create-namespace
+#
+# IMPORTANT: Override secrets via --set or use existingSecret
+# The image tags below are examples: use the tag you built and pushed.
+#
+# This chart has been reviewed but not yet tested on a cluster.
+# ============================================================
+
+global:
+  imageRegistry: ""           # Set to your registry, e.g. "123456.dkr.ecr.us-east-1.amazonaws.com"
+
+# Point to your managed databases. Replace both example addresses.
+# Plain postgresql:// form; the chart derives the driver-specific URLs.
+# To keep credentials out of this file, leave both externalUrl values empty and
+# put DATABASE_URL, DATABASE_URL_SYNC, REDIS_URL, CELERY_BROKER_URL and
+# CELERY_RESULT_BACKEND in the existing Secret instead (see values.yaml).
+database:
+  externalUrl: "postgresql://user:pass@your-rds-instance.us-east-1.rds.amazonaws.com:5432/guardnous?sslmode=require"
+  bundled:
+    enabled: false            # NEVER use bundled PG in production
+
+# Give the address without a database number; /0, /1 and /2 are appended.
+# With TLS (rediss://) Celery requires the ssl_cert_reqs parameter.
+redis:
+  externalUrl: "rediss://your-elasticache.cache.amazonaws.com:6379?ssl_cert_reqs=required"
+  bundled:
+    enabled: false            # NEVER use bundled Redis in production
+
+api:
+  replicaCount: 3
+  image:
+    tag: "1.0.0"
+  resources:
+    requests: { cpu: 500m, memory: 512Mi }
+    limits:   { cpu: 2000m, memory: 2Gi }
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPU: 70
+
+web:
+  replicaCount: 2
+  image:
+    tag: "1.0.0"
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits:   { cpu: 500m, memory: 256Mi }
+  hpa:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPU: 70
+
+worker:
+  replicaCount: 3
+  image:
+    tag: "1.0.0"
+  concurrency: 4
+  resources:
+    requests: { cpu: 500m, memory: 512Mi }
+    limits:   { cpu: 2000m, memory: 2Gi }
+  hpa:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPU: 60
+
+beat:
+  enabled: true
+  image:
+    tag: "1.0.0"
+
+config:
+  environment: production
+  # frontendUrl, backendUrl and corsOrigins are derived from ingress.host
+  # (https://guardnous.yourcompany.com). The web image must be built for the
+  # same address: ./scripts/build-images.sh --api-url https://guardnous.yourcompany.com
+  trustedProxyCount: 1        # one ingress controller in front of the API
+
+ingress:
+  enabled: true
+  className: nginx            # or alb, traefik
+  host: guardnous.yourcompany.com
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls:
+    enabled: true
+    secretName: guardnous-tls
+
+# Use a pre-created K8s secret for sensitive values, for example:
+#   kubectl create secret generic guardnous-secrets -n guardnous \
+#     --from-literal=SECRET_KEY="$(openssl rand -hex 32)" \
+#     --from-literal=ENCRYPTION_KEY="$(openssl rand -base64 32 | tr '+/' '-_')" \
+#     --from-literal=INITIAL_ADMIN_PASSWORD='<choose one>'
+# Keep a copy of ENCRYPTION_KEY: stored tokens cannot be read with another key.
+secrets:
+  existingSecret: "guardnous-secrets"
+
+serviceAccount:
+  create: true
+  annotations:
+    # AWS IRSA:
+    # eks.amazonaws.com/role-arn: arn:aws:iam::role/guardnous
+    # GCP Workload Identity:
+    # iam.gke.io/gcp-service-account: guardnous@project.iam.gserviceaccount.com

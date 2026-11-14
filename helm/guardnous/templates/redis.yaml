@@ -1,0 +1,72 @@
+{{/* Bundled Redis — only for dev/testing. Disable in production. */}}
+{{- if .Values.redis.bundled.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "guardnous.fullname" . }}-redis
+  labels:
+    {{- include "guardnous.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  serviceName: {{ include "guardnous.fullname" . }}-redis
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "guardnous.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis
+  template:
+    metadata:
+      labels:
+        {{- include "guardnous.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: redis
+    spec:
+      containers:
+        - name: redis
+          image: {{ .Values.redis.bundled.image }}
+          ports:
+            - containerPort: 6379
+          command: ["redis-server", "--appendonly", "yes"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.redis.bundled.resources | nindent 12 }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.redis.bundled.storageClass }}
+        storageClassName: {{ .Values.redis.bundled.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.redis.bundled.storage }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "guardnous.fullname" . }}-redis
+  labels:
+    {{- include "guardnous.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: redis
+  selector:
+    {{- include "guardnous.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+{{- end }}

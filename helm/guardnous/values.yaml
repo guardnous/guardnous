@@ -1,0 +1,335 @@
+# ============================================================
+# GuardNous Helm Values — Production Defaults
+# ============================================================
+# This chart has been reviewed but not yet tested on a cluster.
+#
+# QUICK START:
+#   1. Build and push the images (the web image needs the public address):
+#        ./scripts/build-images.sh -r <registry> -t <tag> --api-url https://<ingress.host> -p
+#   2. Set global.imageRegistry and the image tags
+#   3. Set database.externalUrl and redis.externalUrl
+#   4. Set secrets.secretKey and secrets.encryptionKey (or secrets.existingSecret)
+#   5. Set ingress.host
+#   6. helm install guardnous ./helm/guardnous -f my-values.yaml -n guardnous --create-namespace
+#
+# `helm install` stops with a message when the database, Redis or the two keys
+# are not configured. ./scripts/setup-k8s.sh writes a values file interactively.
+# ============================================================
+
+global:
+  # Images are pulled from <imageRegistry>/<repository>:<tag>. With the defaults
+  # below and imageRegistry ghcr.io/your-org that is ghcr.io/your-org/guardnous/api:latest,
+  # which is what ./scripts/build-images.sh -r ghcr.io/your-org builds.
+  imageRegistry: ""            # e.g. ghcr.io/your-org, 123456.dkr.ecr.us-east-1.amazonaws.com
+  imagePullSecrets: []         # e.g. [{ name: regcred }]
+
+# ============================================================
+# DATABASE — External is the default (RDS, Azure DB, Cloud SQL)
+# ============================================================
+database:
+  # Connection string of your managed PostgreSQL, in plain postgresql:// form.
+  # The chart derives the two forms the application needs from it:
+  #   DATABASE_URL       postgresql+asyncpg://...   ("sslmode=" is renamed to "ssl=")
+  #   DATABASE_URL_SYNC  postgresql+psycopg2://...
+  # Characters such as @ : / ? # in the password must be percent-encoded.
+  # Besides sslmode, do not add libpq-only query parameters: asyncpg rejects them.
+  # To keep the password out of your values file, leave this empty and put
+  # DATABASE_URL and DATABASE_URL_SYNC (in the two forms above) in secrets.existingSecret.
+  externalUrl: ""              # e.g. postgresql://user:pass@rds-host:5432/guardnous?sslmode=require
+  # OR use bundled PostgreSQL for dev/testing (NOT recommended for production).
+  # Its password is secrets.databasePassword (letters and digits only).
+  bundled:
+    enabled: false
+    image: postgres:16-alpine
+    storage: 20Gi
+    storageClass: ""
+    resources:
+      requests: { cpu: 250m, memory: 512Mi }
+      limits:   { cpu: "1", memory: 1Gi }
+
+# ============================================================
+# REDIS — External is the default (ElastiCache, Azure Cache, Memorystore)
+# ============================================================
+redis:
+  # URL of your managed Redis. The application uses three logical databases and
+  # the chart derives them from this value (a database number in it is replaced,
+  # a query string is kept):
+  #   REDIS_URL              <externalUrl>/0   cache, rate limits
+  #   CELERY_BROKER_URL      <externalUrl>/1   task queue
+  #   CELERY_RESULT_BACKEND  <externalUrl>/2   task results
+  # With TLS (rediss://) Celery requires the ssl_cert_reqs parameter, e.g.
+  #   rediss://:password@host:6379?ssl_cert_reqs=required
+  # Redis Cluster / services with a single database: set the two overrides below.
+  externalUrl: ""              # e.g. redis://:password@redis-host:6379
+  celeryBrokerUrl: ""          # optional: full URL, replaces the derived /1
+  celeryResultBackend: ""      # optional: full URL, replaces the derived /2
+  # OR use bundled Redis for dev/testing:
+  bundled:
+    enabled: false
+    image: redis:7-alpine
+    storage: 2Gi
+    storageClass: ""
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits:   { cpu: 250m, memory: 256Mi }
+
+# ============================================================
+# API Backend (FastAPI)
+# ============================================================
+api:
+  replicaCount: 2
+  image:
+    repository: guardnous/api
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 8000
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits:   { cpu: "1", memory: 1Gi }
+  hpa:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPU: 70
+    targetMemory: 80
+  # Liveness/readiness probes
+  probes:
+    liveness:  { path: /api/health, initialDelay: 30, period: 15 }
+    readiness: { path: /api/health, initialDelay: 10, period: 5 }
+  # Only the api component changes the database schema; worker and beat never do.
+  # Every api process creates/upgrades the schema and inserts base data when it
+  # starts, and the application has no setting to turn that off and takes no
+  # lock while doing it. With this enabled, an init container does the same
+  # work first while holding a PostgreSQL advisory lock, so replicas starting
+  # together run it one at a time and the process start that follows finds
+  # nothing to change. Disable only when running a single replica.
+  prepareDatabase:
+    enabled: true
+
+# ============================================================
+# Web Frontend (Next.js)
+# ============================================================
+# The address of the API is compiled into the web image at build time
+# (NEXT_PUBLIC_API_URL, see ./scripts/build-images.sh --api-url). It cannot be
+# set here. Build the image with https://<ingress.host> for an Ingress
+# installation; the default http://localhost:7002 fits port-forwarding.
+web:
+  replicaCount: 2
+  image:
+    repository: guardnous/web
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 3000
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits:   { cpu: 500m, memory: 256Mi }
+  hpa:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPU: 70
+
+# ============================================================
+# Celery Workers (scan jobs, CVE sync, notifications)
+# ============================================================
+worker:
+  replicaCount: 2
+  image:
+    repository: guardnous/api   # Same image as API
+    tag: latest
+    pullPolicy: IfNotPresent
+  concurrency: 4                   # --concurrency flag
+  resources:
+    requests: { cpu: 500m, memory: 1Gi }
+    limits:   { cpu: "2", memory: 2Gi }
+  hpa:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 20
+    targetCPU: 60
+
+# ============================================================
+# Celery Beat — Scheduler (always 1 replica, never scale)
+# ============================================================
+beat:
+  enabled: true
+  image:
+    repository: guardnous/api
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits:   { cpu: 250m, memory: 256Mi }
+
+# ============================================================
+# Application Config (non-sensitive → ConfigMap)
+# ============================================================
+# Each value becomes the environment variable named in its comment, for the
+# api, worker and beat pods alike (settings of backend/app/core/config.py).
+config:
+  environment: production          # ENVIRONMENT: development | staging | production
+                                   # production turns off /docs, /redoc and /openapi.json
+  debug: false                     # DEBUG
+  edition: community               # EDITION: community | enterprise
+
+  # Public addresses. Empty = derived from the Ingress (http(s)://<ingress.host>);
+  # without Ingress they default to the port-forward addresses
+  # http://localhost:7003 (frontend) and http://localhost:7002 (backend).
+  frontendUrl: ""                  # FRONTEND_URL  links in e-mails, OAuth redirects
+  backendUrl: ""                   # BACKEND_URL   webhook and OAuth callback addresses
+  corsOrigins: ""                  # CORS_ORIGINS  comma-separated; empty = frontendUrl
+  corsAllowAll: false              # CORS_ALLOW_ALL
+  # Public https address where /.well-known/openid-configuration is reachable from
+  # the internet (connecting cloud accounts without stored keys). Empty = backendUrl
+  # when that is https.
+  oidcIssuerUrl: ""                # OIDC_ISSUER_URL
+  awsOnboardingTemplateUrl: ""     # AWS_ONBOARDING_TEMPLATE_URL
+
+  accessTokenExpireMinutes: 60     # ACCESS_TOKEN_EXPIRE_MINUTES
+  rateLimitEnabled: true           # RATE_LIMIT_ENABLED (the limiter counts per api pod)
+  # Number of reverse proxies in front of the API whose X-Forwarded-For is trusted.
+  # 1 fits one ingress controller; set 0 when the API is reached directly
+  # (port-forward), and add one for each further load balancer or CDN in front.
+  trustedProxyCount: 1             # TRUSTED_PROXY_COUNT
+  pluginIntegrityMode: enforce     # PLUGIN_INTEGRITY_MODE: enforce | warn | off
+  demoDataEnabled: false           # DEMO_DATA_ENABLED (never true for real use)
+
+  # true = create admin@guardnous.com when the database is first prepared, with
+  # secrets.initialAdminPassword (or a generated password, printed once in the log).
+  # false = nobody is created; the first person to sign up at /register gets
+  # their own organization.
+  seedAdmin: true                  # GUARDNOUS_SEED_ADMIN
+
+  # GitHub App (pull requests are opened by the app). Private key and webhook
+  # secret: secrets.githubAppPrivateKey / secrets.githubAppWebhookSecret.
+  githubAppId: ""                  # GITHUB_APP_ID
+  githubAppSlug: guardnous         # GITHUB_APP_SLUG
+
+  agent:
+    enabled: true                  # AGENT_ENABLED
+    maxSteps: 6                    # AGENT_MAX_STEPS            tool calls per chat turn
+    runMaxSteps: 12                # AGENT_RUN_MAX_STEPS        model calls per agent run
+    autoTriageAfterScan: false     # AGENT_AUTO_TRIAGE_AFTER_SCAN
+    monthlyTokenBudget: 0          # AGENT_MONTHLY_TOKEN_BUDGET per organization, 0 = unlimited
+    approvalTtlHours: 72           # AGENT_APPROVAL_TTL_HOURS
+    allowSelfApproval: false       # AGENT_ALLOW_SELF_APPROVAL  test installations only
+
+  llm:
+    provider: mock                 # LLM_PROVIDER: mock | openai | azure | azure_foundry | anthropic | ollama
+    model: gpt-4o-mini             # LLM_MODEL
+    baseUrl: ""                    # LLM_BASE_URL    azure / ollama / compatible gateways
+    apiVersion: "2024-06-01"       # LLM_API_VERSION azure only
+    temperature: 0.2               # LLM_TEMPERATURE
+    maxTokens: 1200                # LLM_MAX_TOKENS
+    inputPricePerMtok: 0           # LLM_INPUT_PRICE_PER_MTOK   USD per million tokens, 0 = cost not shown
+    outputPricePerMtok: 0          # LLM_OUTPUT_PRICE_PER_MTOK
+    # The API key is secrets.llmApiKey
+
+  smtp:
+    host: ""                       # SMTP_HOST  empty = e-mail is not sent
+    port: 587                      # SMTP_PORT
+    user: ""                       # SMTP_USER  (password: secrets.smtpPassword)
+    useTls: true                   # SMTP_USE_TLS
+    fromEmail: noreply@guardnous.io  # SMTP_FROM_EMAIL
+    fromName: GuardNous            # SMTP_FROM_NAME
+
+  # Any other non-secret setting from backend/app/core/config.py, by its
+  # environment variable name, e.g.  NVD_API_URL: "https://..."
+  extraEnv: {}
+
+# ============================================================
+# Secrets (sensitive → K8s Secret)
+# ============================================================
+secrets:
+  # Option 1: Reference a pre-created K8s Secret. Its keys are the environment
+  # variable names. Required: SECRET_KEY, ENCRYPTION_KEY.
+  #   With bundled PostgreSQL also: DATABASE_PASSWORD.
+  #   When database.externalUrl / redis.externalUrl are left empty also:
+  #     DATABASE_URL (postgresql+asyncpg://...), DATABASE_URL_SYNC (postgresql+psycopg2://...),
+  #     REDIS_URL, CELERY_BROKER_URL, CELERY_RESULT_BACKEND.
+  #   Optional: INITIAL_ADMIN_PASSWORD, LLM_API_KEY, SMTP_PASSWORD, GITHUB_APP_PRIVATE_KEY,
+  #     GITHUB_APP_WEBHOOK_SECRET, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, NVD_API_KEY, ...
+  # The values below (Option 2) are ignored when this is set.
+  existingSecret: ""
+
+  # Option 2: Provide values here (Helm creates the Secret)
+  secretKey: ""                    # SECRET_KEY      (REQUIRED) openssl rand -hex 32
+  encryptionKey: ""                # ENCRYPTION_KEY  (REQUIRED) openssl rand -base64 32 | tr '+/' '-_'
+                                   # Keep it: stored tokens cannot be read with another key.
+  databasePassword: ""             # DATABASE_PASSWORD, bundled PostgreSQL only (default guardnous);
+                                   # letters and digits only, applied when its volume is first created
+  # Password of admin@guardnous.com, used only when that account is first
+  # created (config.seedAdmin). Empty = generated and printed once in the log.
+  initialAdminPassword: ""         # INITIAL_ADMIN_PASSWORD
+  githubAppPrivateKey: ""          # GITHUB_APP_PRIVATE_KEY     PEM content
+  githubAppWebhookSecret: ""       # GITHUB_APP_WEBHOOK_SECRET
+  llmApiKey: ""                    # LLM_API_KEY
+  smtpPassword: ""                 # SMTP_PASSWORD
+  # Any other secret setting by its environment variable name,
+  # e.g.  STRIPE_SECRET_KEY: "..."
+  extra: {}
+  # VCS OAuth (optional — enable the providers you use)
+  githubClientId: ""
+  githubClientSecret: ""
+  gitlabClientId: ""
+  gitlabClientSecret: ""
+  bitbucketClientId: ""
+  bitbucketClientSecret: ""
+  azureDevopsClientId: ""
+  azureDevopsClientSecret: ""
+  # External services (optional)
+  nvdApiKey: ""                    # NVD_API_KEY
+
+# ============================================================
+# Scanner binary cache
+# ============================================================
+# A scanner version approved in the UI is downloaded to /app/data/plugin_cache
+# by the api pod and used by the worker pods. Without a shared volume each pod
+# has its own copy of that directory, so an approved version does not reach the
+# workers; the scanners built into the image always work. To share it, create a
+# ReadWriteMany PersistentVolumeClaim and name it here.
+pluginCache:
+  existingClaim: ""
+
+# ============================================================
+# Container users
+# ============================================================
+# The images declare their users by name, which Kubernetes cannot verify as
+# non-root, so the numeric IDs are set explicitly.
+securityContext:
+  backendUser: 1000                # "appuser" in backend/Dockerfile
+  webUser: 1001                    # "nextjs" in frontend/Dockerfile
+
+# ============================================================
+# Ingress
+# ============================================================
+# Routes /api, /health, /.well-known, /docs, /redoc and /openapi.json to the
+# API and everything else to the web frontend, on one host.
+ingress:
+  enabled: true
+  className: nginx                 # nginx | traefik | alb | gce
+  annotations: {}
+  #  cert-manager.io/cluster-issuer: letsencrypt-prod
+  #  nginx.ingress.kubernetes.io/proxy-body-size: 50m
+  host: guardnous.example.com
+  tls:
+    enabled: false
+    secretName: guardnous-tls
+
+# ============================================================
+# Service Accounts & RBAC
+# ============================================================
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}                  # e.g. eks.amazonaws.com/role-arn for IRSA
+
+# ============================================================
+# Pod-level settings (applied to all workloads)
+# ============================================================
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []

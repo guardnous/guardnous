@@ -1,0 +1,414 @@
+rules:
+  # ── AWS S3 ──────────────────────────────────────────────
+  - id: aws-s3-no-encryption
+    patterns:
+      - pattern: |
+          resource "aws_s3_bucket" $NAME { ... }
+      - pattern-not-inside: |
+          resource "aws_s3_bucket_server_side_encryption_configuration" $_ { ... }
+    message: >
+      S3 bucket `$NAME` does not have server-side encryption configured.
+      Enable SSE-S3 or SSE-KMS encryption.
+    severity: ERROR
+    languages: [hcl]
+    metadata:
+      category: security
+      cwe: "CWE-311: Missing Encryption of Sensitive Data"
+      technology: [terraform, aws]
+
+  - id: aws-s3-public-acl
+    pattern: |
+      acl = "public-read"
+    message: >
+      S3 bucket uses `public-read` ACL. This makes objects publicly accessible.
+      Use `private` ACL and configure access via bucket policies.
+    severity: ERROR
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, aws]
+
+  - id: aws-s3-public-read-write
+    pattern: |
+      acl = "public-read-write"
+    message: >
+      S3 bucket uses `public-read-write` ACL. Anyone can read and write objects.
+    severity: ERROR
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, aws]
+
+  - id: aws-s3-no-versioning
+    patterns:
+      - pattern: |
+          resource "aws_s3_bucket" $NAME { ... }
+      - pattern-not-inside: |
+          resource "aws_s3_bucket_versioning" $_ { ... }
+    message: >
+      S3 bucket `$NAME` does not have versioning enabled.
+    severity: WARNING
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, aws]
+
+  - id: aws-s3-no-logging
+    patterns:
+      - pattern: |
+          resource "aws_s3_bucket" $NAME { ... }
+      - pattern-not-inside: |
+          resource "aws_s3_bucket_logging" $_ { ... }
+    message: >
+      S3 bucket `$NAME` does not have access logging enabled.
+    severity: WARNING
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, aws]
+
+  # ── AWS Security Groups ─────────────────────────────────
+  - id: aws-security-group-open-ingress
+    pattern: |
+      ingress {
+        ...
+        cidr_blocks = ["0.0.0.0/0"]
+        ...
+      }
+    message: >
+      Security group allows ingress from 0.0.0.0/0 (entire internet).
+      Restrict to specific CIDR ranges.
+    severity: ERROR
+    languages: [hcl]
+    metadata:
+      category: security
+      cwe: "CWE-284: Improper Access Control"
+      technology: [terraform, aws]
+
+  - id: aws-security-group-open-egress
+    pattern: |
+      egress {
+        ...
+        cidr_blocks = ["0.0.0.0/0"]
+        ...
+        protocol = "-1"
+        ...
+      }
+    message: >
+      Security group allows unrestricted egress to all destinations.
+      Limit outbound traffic to required destinations.
+    severity: WARNING
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, aws]
+
+  # ── AWS IAM ─────────────────────────────────────────────
+  - id: aws-iam-wildcard-action
+    pattern: |
+      actions = ["*"]
+    message: >
+      IAM policy grants wildcard (*) actions. Follow least-privilege principle.
+    severity: ERROR
+    languages: [hcl]
+    metadata:
+      category: security
+      cwe: "CWE-250: Execution with Unnecessary Privileges"
+      technology: [terraform, aws]
+
+  - id: aws-iam-wildcard-resource
+    pattern: |
+      resources = ["*"]
+    message: >
+      IAM policy grants access to all resources (*).
+      Scope to specific resource ARNs.
+    severity: WARNING
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, aws]
+
+  - id: aws-iam-admin-policy
+    pattern: |
+      policy = "arn:aws:iam::aws:policy/AdministratorAccess"
+    message: >
+      IAM entity has AdministratorAccess policy attached.
+      Use more restrictive, least-privilege policies.
+    severity: ERROR
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, aws]
+
+  # ── AWS EC2/Compute ─────────────────────────────────────
+  - id: aws-ec2-no-metadata-imdsv2
+    pattern: |
+      metadata_options {
+        ...
+        http_tokens = "optional"
+        ...
+      }
+    message: >
+      EC2 instance does not enforce IMDSv2. Set http_tokens to "required"
+      to prevent SSRF-based credential theft.
+    severity: ERROR
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, aws]
+
+  - id: aws-ec2-public-ip
+    pattern: |
+      associate_public_ip_address = true
+    message: >
+      EC2 instance has a public IP address. Use a NAT gateway or
+      load balancer instead of direct public exposure.
+    severity: WARNING
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, aws]
+
+  # ── AWS RDS ─────────────────────────────────────────────
+  - id: aws-rds-publicly-accessible
+    pattern: |
+      publicly_accessible = true
+    message: >
+      RDS instance is publicly accessible. Set publicly_accessible to false.
+    severity: ERROR
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, aws]
+
+  - id: aws-rds-no-encryption
+    pattern: |
+      storage_encrypted = false
+    message: >
+      RDS instance does not have storage encryption enabled.
+    severity: ERROR
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, aws]
+
+  # ── AWS CloudTrail / Logging ────────────────────────────
+  - id: aws-cloudtrail-no-encryption
+    patterns:
+      - pattern: |
+          resource "aws_cloudtrail" $NAME { ... }
+      - pattern-not-inside: |
+          resource "aws_cloudtrail" $NAME { ... kms_key_id = ... ... }
+    message: >
+      CloudTrail `$NAME` does not have KMS encryption configured.
+    severity: WARNING
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, aws]
+
+  # ── Azure ───────────────────────────────────────────────
+  - id: azure-storage-https-only
+    pattern: |
+      enable_https_traffic_only = false
+    message: >
+      Azure storage account does not enforce HTTPS-only traffic.
+    severity: ERROR
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, azure]
+
+  - id: azure-storage-no-network-rules
+    patterns:
+      - pattern: |
+          resource "azurerm_storage_account" $NAME { ... }
+      - pattern-not-inside: |
+          resource "azurerm_storage_account" $NAME { ... network_rules { ... } ... }
+    message: >
+      Azure storage account `$NAME` has no network rules. Configure
+      default_action = "Deny" with allowed IP ranges.
+    severity: WARNING
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, azure]
+
+  - id: azure-nsg-open-ssh
+    pattern: |
+      security_rule {
+        ...
+        destination_port_range = "22"
+        ...
+        source_address_prefix = "*"
+        ...
+        access = "Allow"
+        ...
+      }
+    message: >
+      Azure NSG allows SSH (port 22) from any source.
+      Restrict to specific IPs or use Azure Bastion.
+    severity: ERROR
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, azure]
+
+  - id: azure-nsg-open-rdp
+    pattern: |
+      security_rule {
+        ...
+        destination_port_range = "3389"
+        ...
+        source_address_prefix = "*"
+        ...
+        access = "Allow"
+        ...
+      }
+    message: >
+      Azure NSG allows RDP (port 3389) from any source.
+    severity: ERROR
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, azure]
+
+  # ── GCP ─────────────────────────────────────────────────
+  - id: gcp-compute-default-service-account
+    pattern: |
+      service_account {
+        ...
+        email = "...-compute@developer.gserviceaccount.com"
+        ...
+      }
+    message: >
+      GCP compute instance uses the default service account.
+      Create a dedicated service account with minimal permissions.
+    severity: WARNING
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, gcp]
+
+  - id: gcp-compute-full-api-access
+    pattern: |
+      scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+    message: >
+      GCP instance has full cloud-platform API scope. Restrict
+      to specific scopes needed by your workload.
+    severity: WARNING
+    languages: [hcl]
+    metadata:
+      category: security
+      technology: [terraform, gcp]
+
+  # ── Kubernetes ──────────────────────────────────────────
+  - id: k8s-privileged-container
+    pattern: |
+      securityContext:
+        ...
+        privileged: true
+    message: >
+      Container runs in privileged mode. Remove privileged flag
+      and use specific capabilities instead.
+    severity: ERROR
+    languages: [yaml]
+    metadata:
+      category: security
+      technology: [kubernetes]
+
+  - id: k8s-run-as-root
+    pattern: |
+      securityContext:
+        ...
+        runAsUser: 0
+    message: >
+      Container runs as root (UID 0). Set runAsNonRoot: true and
+      specify a non-root runAsUser.
+    severity: WARNING
+    languages: [yaml]
+    metadata:
+      category: security
+      technology: [kubernetes]
+
+  - id: k8s-no-resource-limits
+    patterns:
+      - pattern: |
+          containers:
+            - ...
+              name: $NAME
+              ...
+      - pattern-not-inside: |
+          containers:
+            - ...
+              name: $NAME
+              ...
+              resources:
+                limits: ...
+    message: >
+      Container `$NAME` has no resource limits set.
+      Set CPU and memory limits to prevent resource exhaustion.
+    severity: WARNING
+    languages: [yaml]
+    metadata:
+      category: security
+      technology: [kubernetes]
+
+  - id: k8s-host-network
+    pattern: |
+      hostNetwork: true
+    message: >
+      Pod uses host network namespace. This breaks network isolation.
+    severity: ERROR
+    languages: [yaml]
+    metadata:
+      category: security
+      technology: [kubernetes]
+
+  - id: k8s-host-pid
+    pattern: |
+      hostPID: true
+    message: >
+      Pod uses host PID namespace. This allows process visibility
+      across the host.
+    severity: ERROR
+    languages: [yaml]
+    metadata:
+      category: security
+      technology: [kubernetes]
+
+  # ── Docker ──────────────────────────────────────────────
+  - id: docker-compose-privileged
+    pattern: |
+      privileged: true
+    message: >
+      Docker container runs in privileged mode. Remove the privileged flag.
+    severity: ERROR
+    languages: [yaml]
+    metadata:
+      category: security
+      technology: [docker]
+
+  # ── Hardcoded Secrets (generic) ─────────────────────────
+  - id: hardcoded-aws-access-key
+    pattern-regex: (?i)(AKIA[0-9A-Z]{16})
+    message: >
+      Hardcoded AWS access key ID detected.
+      Use environment variables or a secrets manager.
+    severity: ERROR
+    languages: [generic]
+    metadata:
+      category: security
+      cwe: "CWE-798: Hardcoded Credentials"
+      technology: [aws]
+
+  - id: hardcoded-password-assignment
+    pattern-regex: (?i)(password|passwd|secret)\s*=\s*"[^"]{8,}"
+    message: >
+      Potential hardcoded password or secret detected.
+      Use a secrets manager or vault.
+    severity: WARNING
+    languages: [generic]
+    metadata:
+      category: security
+      cwe: "CWE-798: Hardcoded Credentials"

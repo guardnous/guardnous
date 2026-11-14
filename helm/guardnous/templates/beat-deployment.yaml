@@ -1,0 +1,45 @@
+{{- if .Values.beat.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "guardnous.fullname" . }}-beat
+  labels:
+    {{- include "guardnous.labels" . | nindent 4 }}
+    app.kubernetes.io/component: beat
+spec:
+  replicas: 1   # Beat must always be exactly 1
+  selector:
+    matchLabels:
+      {{- include "guardnous.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: beat
+  strategy:
+    type: Recreate   # No rolling — only 1 scheduler allowed
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "guardnous.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: beat
+    spec:
+      {{- include "guardnous.podSpec" . | nindent 6 }}
+      containers:
+        - name: beat
+          image: {{ include "guardnous.image" (dict "image" .Values.beat.image "global" .Values.global) }}
+          imagePullPolicy: {{ .Values.beat.image.pullPolicy }}
+          command: ["celery"]
+          args:
+            - "-A"
+            - "app.tasks.celery_app"
+            - "beat"
+            - "--loglevel=info"
+          {{- include "guardnous.backendEnvFrom" . | nindent 10 }}
+          {{- include "guardnous.backendEnv" . | nindent 10 }}
+          resources:
+            {{- toYaml .Values.beat.resources | nindent 12 }}
+          {{- include "guardnous.backendSecurityContext" . | nindent 10 }}
+{{- end }}

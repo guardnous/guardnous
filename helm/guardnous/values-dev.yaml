@@ -1,0 +1,78 @@
+# ============================================================
+# GuardNous — Development / Local K8s (minikube, kind, k3s)
+# ============================================================
+# This chart has been reviewed but not yet tested on a cluster.
+#
+# Usage:
+#   ./scripts/build-images.sh -t dev
+#   (load the two images into the cluster, e.g. `minikube image load guardnous/api:dev`
+#    and `minikube image load guardnous/web:dev`, or `kind load docker-image ...`)
+#   helm install guardnous ./helm/guardnous -f helm/guardnous/values-dev.yaml \
+#     -n guardnous --create-namespace
+# ============================================================
+
+# Use bundled databases for local dev
+database:
+  externalUrl: ""
+  bundled:
+    enabled: true
+    storage: 2Gi
+
+redis:
+  externalUrl: ""
+  bundled:
+    enabled: true
+    storage: 1Gi
+
+# Single replicas for local
+api:
+  replicaCount: 1
+  image:
+    tag: dev
+    pullPolicy: Never         # Use locally-built images
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+
+web:
+  replicaCount: 1
+  image:
+    tag: dev
+    pullPolicy: Never
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits:   { cpu: 250m, memory: 128Mi }
+
+worker:
+  replicaCount: 1
+  image:
+    tag: dev
+    pullPolicy: Never
+  concurrency: 2
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+
+beat:
+  enabled: true
+  image:
+    tag: dev
+    pullPolicy: Never
+
+config:
+  environment: development    # serves /docs
+  trustedProxyCount: 0        # reached directly through port-forward
+  # frontendUrl / backendUrl default to http://localhost:7003 and
+  # http://localhost:7002 when Ingress is off; forward the services to those ports:
+  #   kubectl port-forward svc/guardnous-web 7003:3000 -n guardnous
+  #   kubectl port-forward svc/guardnous-api 7002:8000 -n guardnous
+
+ingress:
+  enabled: false              # Use port-forward for local dev
+
+# Fixed, publicly known keys so a local cluster starts without preparation.
+# NEVER use them for anything but a throwaway local installation.
+secrets:
+  secretKey: local-dev-only-not-secret-0123456789abcdef0123456789abcdef
+  encryptionKey: ZGV2LW9ubHktbm90LWEtc2VjcmV0LWtleS0wMTIzNDU=
+  databasePassword: guardnous

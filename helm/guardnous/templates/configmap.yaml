@@ -1,0 +1,68 @@
+{{- include "guardnous.validate" . -}}
+{{- $cfg := .Values.config -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "guardnous.fullname" . }}-config
+  labels:
+    {{- include "guardnous.labels" . | nindent 4 }}
+data:
+  # Names are the settings of backend/app/core/config.py
+  ENVIRONMENT: {{ $cfg.environment | quote }}
+  DEBUG: {{ $cfg.debug | toString | quote }}
+  EDITION: {{ $cfg.edition | quote }}
+  FRONTEND_URL: {{ include "guardnous.frontendUrl" . | quote }}
+  BACKEND_URL: {{ include "guardnous.backendUrl" . | quote }}
+  CORS_ORIGINS: {{ include "guardnous.corsOrigins" . | quote }}
+  CORS_ALLOW_ALL: {{ $cfg.corsAllowAll | toString | quote }}
+  {{- with $cfg.oidcIssuerUrl }}
+  OIDC_ISSUER_URL: {{ . | quote }}
+  {{- end }}
+  {{- with $cfg.awsOnboardingTemplateUrl }}
+  AWS_ONBOARDING_TEMPLATE_URL: {{ . | quote }}
+  {{- end }}
+  ACCESS_TOKEN_EXPIRE_MINUTES: {{ $cfg.accessTokenExpireMinutes | int64 | toString | quote }}
+  RATE_LIMIT_ENABLED: {{ $cfg.rateLimitEnabled | toString | quote }}
+  TRUSTED_PROXY_COUNT: {{ $cfg.trustedProxyCount | int64 | toString | quote }}
+  PLUGIN_INTEGRITY_MODE: {{ $cfg.pluginIntegrityMode | quote }}
+  DEMO_DATA_ENABLED: {{ $cfg.demoDataEnabled | toString | quote }}
+  # Read by the seed step, not a config.py setting: create admin@guardnous.com on first start
+  GUARDNOUS_SEED_ADMIN: {{ $cfg.seedAdmin | toString | quote }}
+  # GitHub App
+  {{- with $cfg.githubAppId }}
+  GITHUB_APP_ID: {{ . | toString | quote }}
+  {{- end }}
+  GITHUB_APP_SLUG: {{ $cfg.githubAppSlug | quote }}
+  # Agents
+  AGENT_ENABLED: {{ $cfg.agent.enabled | toString | quote }}
+  AGENT_MAX_STEPS: {{ $cfg.agent.maxSteps | int64 | toString | quote }}
+  AGENT_RUN_MAX_STEPS: {{ $cfg.agent.runMaxSteps | int64 | toString | quote }}
+  AGENT_AUTO_TRIAGE_AFTER_SCAN: {{ $cfg.agent.autoTriageAfterScan | toString | quote }}
+  AGENT_MONTHLY_TOKEN_BUDGET: {{ $cfg.agent.monthlyTokenBudget | int64 | toString | quote }}
+  AGENT_APPROVAL_TTL_HOURS: {{ $cfg.agent.approvalTtlHours | int64 | toString | quote }}
+  AGENT_ALLOW_SELF_APPROVAL: {{ $cfg.agent.allowSelfApproval | toString | quote }}
+  # Model provider
+  LLM_PROVIDER: {{ $cfg.llm.provider | quote }}
+  LLM_MODEL: {{ $cfg.llm.model | quote }}
+  {{- with $cfg.llm.baseUrl }}
+  LLM_BASE_URL: {{ . | quote }}
+  {{- end }}
+  LLM_API_VERSION: {{ $cfg.llm.apiVersion | quote }}
+  LLM_TEMPERATURE: {{ $cfg.llm.temperature | toString | quote }}
+  LLM_MAX_TOKENS: {{ $cfg.llm.maxTokens | int64 | toString | quote }}
+  LLM_INPUT_PRICE_PER_MTOK: {{ $cfg.llm.inputPricePerMtok | toString | quote }}
+  LLM_OUTPUT_PRICE_PER_MTOK: {{ $cfg.llm.outputPricePerMtok | toString | quote }}
+  # E-mail
+  {{- with $cfg.smtp.host }}
+  SMTP_HOST: {{ . | quote }}
+  {{- end }}
+  SMTP_PORT: {{ $cfg.smtp.port | int64 | toString | quote }}
+  {{- with $cfg.smtp.user }}
+  SMTP_USER: {{ . | quote }}
+  {{- end }}
+  SMTP_USE_TLS: {{ $cfg.smtp.useTls | toString | quote }}
+  SMTP_FROM_EMAIL: {{ $cfg.smtp.fromEmail | quote }}
+  SMTP_FROM_NAME: {{ $cfg.smtp.fromName | quote }}
+  {{- range $name, $value := $cfg.extraEnv }}
+  {{ $name }}: {{ $value | toString | quote }}
+  {{- end }}

@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "guardnous.fullname" . }}-api
+  labels:
+    {{- include "guardnous.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  {{- if not .Values.api.hpa.enabled }}
+  replicas: {{ .Values.api.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "guardnous.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "guardnous.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api
+    spec:
+      {{- include "guardnous.podSpec" . | nindent 6 }}
+      {{- include "guardnous.pluginCacheVolume" . | nindent 6 }}
+      {{- if .Values.api.prepareDatabase.enabled }}
+      initContainers:
+        # Creates or upgrades the schema and inserts the base data before the
+        # API starts. A PostgreSQL advisory lock makes replicas that start at
+        # the same time do this one after another; the API's own startup check
+        # then finds nothing left to do.
+        - name: prepare-database
+          image: {{ include "guardnous.image" (dict "image" .Values.api.image "global" .Values.global) }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          command: ["python", "-c"]
+          args:
+            - |
+              import asyncio, logging, sys, time
+              logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+              from sqlalchemy import create_engine, text
+              from app.core.config import settings
+              from app.core.migrations import bootstrap_schema
+              from app.core.seed import ensure_seed_data
+
+              LOCK_ID = 727001
+              engine = create_engine(settings.DATABASE_URL_SYNC, pool_pre_ping=True)
+              conn = None
+              for attempt in range(60):
+                  try:
+                      conn = engine.connect()
+                      break
+                  except Exception as exc:
+                      print(f"database not reachable yet ({type(exc).__name__}), retrying", flush=True)
+                      time.sleep(5)
+              if conn is None:
+                  sys.exit("database not reachable after 5 minutes")
+              with conn:
+                  conn.execute(text("SELECT pg_advisory_lock(:id)"), {"id": LOCK_ID})
+                  try:
+                      print(f"schema: {bootstrap_schema()}", flush=True)
+                      asyncio.run(ensure_seed_data())
+                      print("base data: ok", flush=True)
+                  finally:
+                      conn.execute(text("SELECT pg_advisory_unlock(:id)"), {"id": LOCK_ID})
+          {{- include "guardnous.backendEnvFrom" . | nindent 10 }}
+          {{- include "guardnous.backendEnv" . | nindent 10 }}
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          {{- include "guardnous.backendSecurityContext" . | nindent 10 }}
+      {{- end }}
+      containers:
+        - name: api
+          image: {{ include "guardnous.image" (dict "image" .Values.api.image "global" .Values.global) }}
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.port }}
+              protocol: TCP
+          {{- include "guardnous.backendEnvFrom" . | nindent 10 }}
+          {{- include "guardnous.backendEnv" . | nindent 10 }}
+          {{- include "guardnous.pluginCacheMount" . | nindent 10 }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.api.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.api.probes.liveness.initialDelay }}
+            periodSeconds: {{ .Values.api.probes.liveness.period }}
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.api.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.api.probes.readiness.initialDelay }}
+            periodSeconds: {{ .Values.api.probes.readiness.period }}
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          {{- include "guardnous.backendSecurityContext" . | nindent 10 }}

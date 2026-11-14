@@ -1,0 +1,18 @@
+apiVersion: v2
+name: guardnous
+description: Enterprise Cloud Security & IaC Posture Management Platform
+type: application
+version: 0.2.0
+appVersion: "2.0.0"
+keywords:
+  - security
+  - iac
+  - compliance
+  - devsecops
+  - cspm
+home: https://github.com/your-org/guardnous
+sources:
+  - https://github.com/your-org/guardnous
+maintainers:
+  - name: GuardNous Team
+    email: team@guardnous.io

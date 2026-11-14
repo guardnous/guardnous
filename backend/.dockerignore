@@ -1,0 +1,16 @@
+.venv
+.pytest_cache
+**/__pycache__
+**/*.pyc
+.env
+.env.*
+!.env.example
+tests
+test_*.py
+_reset_pw.py
+.git
+.ruff_cache
+*.egg-info
+dist
+build
+.mypy_cache

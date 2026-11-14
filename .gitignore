@@ -1,0 +1,98 @@
+# ─────────────────────────────────────────────────────────────
+# GuardNous .gitignore
+# ─────────────────────────────────────────────────────────────
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+*.so
+*.whl
+venv/
+.venv/
+pip-log.txt
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.turbo/
+frontend/.next/
+frontend/node_modules/
+frontend/out/
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+
+# Database
+postgres_data/
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-workspace
+*.sublime-project
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# Written by scripts/setup-k8s.sh; contains secrets
+helm/guardnous/values-generated.yaml
+# Scanner binaries downloaded when the backend runs on the host (scripts/dev.sh)
+backend/data/
+
+# Coverage / Testing
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage/
+test-results/
+playwright-report/
+
+# Misc
+*.bak
+*.tmp
+.test_token_env
+.test_token_session
+api_test_*.py
+API_TEST_REPORT.md
+
+e2e/playwright-report/
+e2e/test-results/
+
+# Local scratch test scripts. They contain a personal login; the real suite is in e2e/.
+/qa-tests/
+/tests/e2e/
+# Root-level Node manifest used only for local browser scripts
+/package.json
+/package-lock.json
+/node_modules/
