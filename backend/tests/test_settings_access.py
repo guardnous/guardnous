@@ -288,6 +288,68 @@ async def test_without_a_configured_password_a_random_one_is_generated_and_shown
     assert await _login(client, OLD_DEFAULT_PASSWORD) == 401
 
 
+async def test_the_seeded_admin_can_load_their_profile_right_after_signing_in(db_session, client, monkeypatch):
+    """The web app calls /auth/me straight after sign-in; on a fresh install it must not fail."""
+    await _seed_admin(db_session, monkeypatch, "Fresh-Install-Password-3!")
+
+    login = await client.post(
+        "/api/v1/auth/login", data={"username": ADMIN_EMAIL, "password": "Fresh-Install-Password-3!"},
+    )
+    assert login.status_code == 200
+    me = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {login.json()['access_token']}"})
+
+    assert me.status_code == 200, me.text
+    body = me.json()
+    assert body["email"] == ADMIN_EMAIL
+    assert body["is_active"] is True
+    assert body["totp_enabled"] is False
+    assert body["email_verified"] is True
+    assert body["status"] == "active"  # an empty status shows as "Unknown" on the Users page
+
+
+async def test_an_admin_seeded_by_an_earlier_version_gets_its_missing_status_filled_in(
+    db_session, client, monkeypatch,
+):
+    await _seed_admin(db_session, monkeypatch, "Earlier-Version-Password-4!")
+    admin = (await db_session.execute(select(User).where(User.email == ADMIN_EMAIL))).scalar_one()
+    admin.status = None
+    admin.totp_enabled = None
+    admin.email_verified = None
+    await db_session.commit()
+
+    await _seed_admin(db_session, monkeypatch, "")  # what the next start-up does
+
+    await db_session.refresh(admin)
+    assert admin.status == "active"
+    assert admin.totp_enabled is False
+    assert admin.email_verified is True
+    assert await _login(client, "Earlier-Version-Password-4!") == 200
+
+
+async def test_a_profile_loads_for_an_account_whose_flags_were_never_set(db_session, client):
+    """Accounts created before the flags existed have NULL in them."""
+    user, headers = await _user(db_session, client, email="legacy@acme.test", org="Legacy Org")
+    user.totp_enabled = None
+    user.totp_confirmed = None
+    user.email_verified = None
+    await db_session.commit()
+
+    me = await client.get("/api/v1/auth/me", headers=headers)
+
+    assert me.status_code == 200, me.text
+    assert me.json()["totp_enabled"] is False
+    assert me.json()["email_verified"] is False
+
+
+async def test_knowledge_statistics_load_when_nothing_has_been_learned_yet(db_session, client):
+    _, headers = await _user(db_session, client, email="stats@acme.test", org="Stats Org")
+
+    resp = await client.get("/api/v1/agents/knowledge/stats", headers=headers)
+
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["total_patterns"] >= 0
+
+
 async def test_seeding_again_does_not_reset_the_admin_password(db_session, client, monkeypatch, caplog):
     await _seed_admin(db_session, monkeypatch, "First-Install-Password-1!")
     first = await _admin_hash(db_session)

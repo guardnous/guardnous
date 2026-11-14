@@ -1119,7 +1119,9 @@ async def get_knowledge_stats(
     """Get AI knowledge store statistics."""
     from app.services.agents.knowledge import get_knowledge_store
     ks = get_knowledge_store()
-    stats = ks.export_json()
+    # export_json() returns a JSON string of {rule_id: [pattern, ...]}; flatten it.
+    by_rule = json.loads(ks.export_json())
+    stats = [pattern for patterns in by_rule.values() for pattern in patterns]
 
     total_s = sum(p.get("success_count", 0) for p in stats)
     total_f = sum(p.get("failure_count", 0) for p in stats)

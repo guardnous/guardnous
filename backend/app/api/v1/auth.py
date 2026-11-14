@@ -463,7 +463,8 @@ async def get_me(
         email=current_user.email,
         full_name=current_user.full_name,
         role=current_user.role,
-        is_active=current_user.is_active,
+        # These columns are nullable; an account created without them must not break sign-in.
+        is_active=bool(current_user.is_active),
         organization_id=current_user.organization_id,
         tenant_id=current_user.tenant_id,
         status=getattr(current_user, "status", "active"),
@@ -471,9 +472,9 @@ async def get_me(
         permissions=sorted(permissions),
         tenant_name=tenant_name,
         organization_name=org_name,
-        totp_enabled=getattr(current_user, "totp_enabled", False) and getattr(current_user, "totp_confirmed", False),
+        totp_enabled=bool(getattr(current_user, "totp_enabled", False) and getattr(current_user, "totp_confirmed", False)),
         setup_completed=setup_done,
-        email_verified=getattr(current_user, "email_verified", False),
+        email_verified=bool(getattr(current_user, "email_verified", False)),
         organizations=orgs_list,
     )
 

@@ -274,6 +274,16 @@ async def _seed_admin_user(db: AsyncSession) -> None:
             "UPDATE users SET role = 'superadmin' "
             "WHERE email = :e AND tenant_id = 1000 AND role != 'superadmin'"
         ), {"e": admin_email})
+        # An admin seeded by an earlier version has no status or flags (the insert
+        # skipped the column defaults). Fill only what is missing; never overwrite.
+        await db.execute(text(
+            "UPDATE users SET status = COALESCE(status, 'active'), "
+            "totp_enabled = COALESCE(totp_enabled, false), "
+            "totp_confirmed = COALESCE(totp_confirmed, false), "
+            "email_verified = COALESCE(email_verified, true) "
+            "WHERE email = :e AND tenant_id = 1000 AND (status IS NULL OR totp_enabled IS NULL "
+            "OR totp_confirmed IS NULL OR email_verified IS NULL)"
+        ), {"e": admin_email})
         return
 
     # Ensure demo org exists
@@ -299,8 +309,11 @@ async def _seed_admin_user(db: AsyncSession) -> None:
         password = generate_admin_password()
 
     await db.execute(text(
-        "INSERT INTO users (email, hashed_password, full_name, role, organization_id, is_active, tenant_id) "
-        "VALUES (:email, :pw, 'Admin User', 'superadmin', :org_id, true, :tid)"
+        # Raw SQL skips the model's column defaults, so every flag is set here.
+        # The seeded address has no mailbox, so it is marked verified.
+        "INSERT INTO users (email, hashed_password, full_name, role, organization_id, is_active, tenant_id, "
+        "status, totp_enabled, totp_confirmed, email_verified) "
+        "VALUES (:email, :pw, 'Admin User', 'superadmin', :org_id, true, :tid, 'active', false, false, true)"
     ), {"email": admin_email, "pw": get_password_hash(password), "org_id": org_id, "tid": 1000})
     logger.info("Seeded admin user: %s", admin_email)
     if generated:
