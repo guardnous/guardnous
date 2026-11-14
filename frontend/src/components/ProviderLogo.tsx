@@ -13,6 +13,19 @@ export const providerName = (id: string, short = false) => {
 
 const SIZES = { sm: 32, md: 44, lg: 64 } as const;
 
+/**
+ * The name a person gave a cloud account, or "" when it only repeats the provider
+ * and the account number (the default, e.g. "AWS 123456789012"). Pages that already
+ * show the provider and the number use this to avoid saying both again.
+ */
+export const customAccountName = (name: string | null | undefined, identifier: string | null | undefined) => {
+  const rest = (name ?? "")
+    .replace(identifier ?? "", "")
+    .replace(/amazon web services|microsoft azure|google cloud platform|google cloud|aws|azure|gcp|account/gi, "")
+    .replace(/[\s·:#()-]+/g, "");
+  return rest ? (name ?? "").trim() : "";
+};
+
 export default function ProviderLogo({ provider, size = "md" }: { provider: string; size?: keyof typeof SIZES }) {
   const box = SIZES[size];
   const inner = Math.round(box * 0.68);

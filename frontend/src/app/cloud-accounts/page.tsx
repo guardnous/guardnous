@@ -42,7 +42,7 @@ import {
 } from "@/lib/api";
 import PageLayout from "@/components/PageLayout";
 import AwsKeylessConnect from "@/components/AwsKeylessConnect";
-import ProviderLogo from "@/components/ProviderLogo";
+import ProviderLogo, { customAccountName } from "@/components/ProviderLogo";
 
 /* ─── Provider metadata ─────────────────────────────────────────────── */
 
@@ -453,7 +453,6 @@ export default function CloudAccountsPage() {
                 {open && (
         <div className="space-y-3 border-t border-slate-200 p-3 dark:border-zinc-800">
           {own.map((acct) => {
-            const prov = PROVIDER_MAP[acct.provider];
             const statusCfg = STATUS_CONFIG[acct.status] || STATUS_CONFIG.pending;
             const StatusIcon = statusCfg.icon;
             const isExpanded = expandedAccount === acct.id;
@@ -470,20 +469,21 @@ export default function CloudAccountsPage() {
                   className="flex items-center gap-4 p-4 cursor-pointer"
                   onClick={() => setExpandedAccount(isExpanded ? null : acct.id)}
                 >
-                  {/* Provider icon */}
-                  <ProviderLogo provider={acct.provider} />
-
-                  {/* Info */}
+                  {/* Info. The group header above already shows the cloud's logo and name,
+                      so a row shows the account once: its own name if it has one, else its number. */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold truncate text-slate-900 dark:text-white">{acct.name}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${prov?.bgColor} ${prov?.textColor} font-medium`}>
-                        {prov?.shortName || acct.provider.toUpperCase()}
+                      <span className={`font-semibold truncate text-slate-900 dark:text-white ${customAccountName(acct.name, acct.account_identifier) ? "" : "font-mono"}`}>
+                        {customAccountName(acct.name, acct.account_identifier) || acct.account_identifier}
                       </span>
                     </div>
                     <div className="text-sm text-slate-500 dark:text-zinc-400 flex items-center gap-3 mt-0.5">
-                      <span className="font-mono text-xs">{acct.account_identifier}</span>
-                      <span className="text-slate-300 dark:text-zinc-600">•</span>
+                      {customAccountName(acct.name, acct.account_identifier) && (
+                        <>
+                          <span className="font-mono text-xs">{acct.account_identifier}</span>
+                          <span className="text-slate-300 dark:text-zinc-600">•</span>
+                        </>
+                      )}
                       <span>{acct.resources_count} resources</span>
                       {acct.last_synced_at && (
                         <>

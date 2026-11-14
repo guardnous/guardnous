@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { ArrowLeft, ChevronDown, ChevronRight, Loader2, RefreshCw, Undo2, Wrench } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
-import ProviderLogo, { providerName } from "@/components/ProviderLogo";
+import { customAccountName, providerName } from "@/components/ProviderLogo";
 import { evaluateCloudPosture, getCloudPosture, rollbackCloudChange, startAgentRun, syncCloudAccount } from "@/lib/api";
 
 /* ── Types ── */
@@ -260,8 +260,15 @@ export default function CloudAccountPosturePage() {
 
   const layout = (children: React.ReactNode) => (
     <PageLayout
-      title={account ? account.name : "Cloud account"}
-      subtitle={account ? `${providerName(account.provider)} account ${account.account}` : "Cloud posture of one account"}
+      // The provider and the account number are each shown once.
+      title={account ? customAccountName(account.name, account.account) || account.account : "Cloud account"}
+      subtitle={
+        account
+          ? customAccountName(account.name, account.account)
+            ? `${providerName(account.provider)} account ${account.account}`
+            : `${providerName(account.provider)} account`
+          : "Cloud posture of one account"
+      }
     >
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <Link href="/cloud-posture" className={`inline-flex items-center gap-1.5 text-sm ${strong} hover:underline`}>
@@ -269,9 +276,8 @@ export default function CloudAccountPosturePage() {
         </Link>
         {account && (
           <div className="flex items-center gap-3">
-            <ProviderLogo provider={account.provider} size="sm" />
             <span className={`text-xs ${muted}`}>
-              {account.status === "connected" ? "Connected" : account.status} · last synced {formatTime(account.last_synced_at)}
+              {account.status === "connected" ? "Connected" : `Connection: ${account.status}`} · last synced {formatTime(account.last_synced_at)}
             </span>
             <button
               type="button"

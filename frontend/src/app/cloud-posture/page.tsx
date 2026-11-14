@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
-import ProviderLogo, { CLOUD_PROVIDERS } from "@/components/ProviderLogo";
+import ProviderLogo, { CLOUD_PROVIDERS, customAccountName } from "@/components/ProviderLogo";
 import { evaluateCloudPosture, getCloudPosture } from "@/lib/api";
 
 /* ── Types ── */
@@ -65,10 +65,14 @@ function AccountLink({ account }: { account: AccountRow }) {
       >
         <div className="min-w-[220px] flex-1">
           <p className={`font-mono text-sm font-semibold ${strong}`}>{account.account}</p>
-          <p className={`text-xs ${muted}`}>
-            {account.name}
-            {account.status !== "connected" ? ` · ${account.status}` : ""}
-          </p>
+          {/* The section header already names the cloud; show a name only if someone chose one. */}
+          {(customAccountName(account.name, account.account) || account.status !== "connected") && (
+            <p className={`text-xs ${muted}`}>
+              {[customAccountName(account.name, account.account), account.status !== "connected" ? `Connection: ${account.status}` : ""]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
         </div>
         {checked ? (
           <>
