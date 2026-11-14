@@ -82,6 +82,24 @@ What is not there yet: posture rules for Azure and Google Cloud, a supported Kub
 deployment (a Helm chart is included as a preview), and parallel execution of multi-agent plans.
 The [roadmap](docs/roadmap.md) lists what is built and what is planned.
 
+### What has been verified
+
+Everything has automated tests. Not everything has been run against the real service yet:
+
+| | Status |
+|---|---|
+| Install with Docker Compose, the scanners, findings and triage | ✅ Verified |
+| **GitHub**: connect, scan repositories, fix pull requests | ✅ Verified |
+| **AWS**: keyless connection, reading an account, the 44 rules | ✅ Verified |
+| AI chat and agent runs with approval (Azure AI Foundry) | ✅ Verified |
+| **GitLab, Bitbucket, Azure DevOps** | 🧪 Tested with simulated services only |
+| **Azure, Google Cloud**: connect and inventory | 🧪 Tested with simulated services only |
+| AWS fixes and rollback; webhooks; Slack; other model providers | 🧪 Tested with simulated services only |
+| Kubernetes (Helm chart) | 🚧 Preview, not yet run on a cluster |
+
+The full list is in [What has been verified](docs/status.md). Have access to one of the untested
+services? Verifying it is a great first contribution.
+
 ## Architecture
 
 <div align="center">
@@ -156,6 +174,7 @@ on your own infrastructure. The full capability comparison is in [Why GuardNous]
 | Docker Compose and the Kubernetes preview | [Deployment](docs/deployment.md) |
 | Local development and tests | [Development](docs/development.md) · [Project structure](docs/project-structure.md) |
 | How the Triage Agent is evaluated | [Triage evaluation](docs/evals/triage.md) |
+| What has been run against real services | [What has been verified](docs/status.md) |
 | What is built and what is planned | [Roadmap](docs/roadmap.md) · [Changelog](CHANGELOG.md) |
 | Reporting a vulnerability | [SECURITY.md](SECURITY.md) |
 
@@ -165,6 +184,7 @@ Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers setup, test
 request process, and the [Code of Conduct](CODE_OF_CONDUCT.md) applies to everyone.
 
 Good first contributions:
+- Verify an integration you have access to (GitLab, Bitbucket, Azure DevOps, Azure, Google Cloud): see [What has been verified](docs/status.md)
 - A scanner adapter: one Python file, see [Scanner plugins](docs/plugins.md)
 - A cloud posture rule, or controls for an existing compliance framework
 - Tests
