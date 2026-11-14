@@ -204,7 +204,7 @@ chore: update FastAPI to 0.110
 ## Adding a New Scanner
 
 1. Create one file in `backend/app/services/plugins/adapters/`, for example `your_scanner.py`
-2. Define a `PluginAdapter` subclass with `metadata()`, `health()` and `scan()`. The README section "Adding a New Scanner" has a complete working example
+2. Define a `PluginAdapter` subclass with `metadata()`, `health()` and `scan()`. [docs/plugins.md](docs/plugins.md) has a complete working example
 3. Restart the API and the workers. Adapters in that directory are found at startup; no registration step is needed. A file that fails to load is listed on the Plugins page and at `GET /api/v1/plugins/load-errors`
 4. Add tests in `backend/tests/test_your_scanner.py`
 

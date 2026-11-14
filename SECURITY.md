@@ -15,7 +15,7 @@
 Instead, report them responsibly via one of these channels:
 
 1. **GitHub Security Advisories** — [Open a private advisory](../../security/advisories/new)
-2. **Email** — Send details to **security@guardnous.dev**
+2. **Email** — Send details to **harsh.khajgiwale@gmail.com**
 
 ### What to Include
 

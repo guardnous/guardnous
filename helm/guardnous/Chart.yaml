@@ -10,9 +10,9 @@ keywords:
   - compliance
   - devsecops
   - cspm
-home: https://github.com/your-org/guardnous
+home: https://github.com/guardnous/guardnous
 sources:
-  - https://github.com/your-org/guardnous
+  - https://github.com/guardnous/guardnous
 maintainers:
-  - name: GuardNous Team
-    email: team@guardnous.io
+  - name: Harsh Khajgiwale
+    email: harsh.khajgiwale@gmail.com

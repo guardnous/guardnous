@@ -32,7 +32,7 @@
 ### Step 1: Clone & Start
 
 ```bash
-git clone https://github.com/your-org/guardnous.git
+git clone https://github.com/guardnous/guardnous.git
 cd guardnous
 
 # Write .env with generated keys, build and start everything.
