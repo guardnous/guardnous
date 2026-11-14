@@ -6,7 +6,9 @@
 
 ### *Defend What Matters*
 
-**Code scanning · Cloud posture · 20 AI agents with human approval for every change**
+**Your scanners. Your model. Your infrastructure.**
+
+Security AI agents you can audit. The open-source security platform with AI agents built in.
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
@@ -25,7 +27,9 @@
 
 ---
 
-GuardNous is a self-hosted, open-source security platform that does three things:
+GuardNous is a free, open-source security platform that runs on your own infrastructure, with
+the scanners you already use and the AI model you choose. Your code and cloud data stay with you,
+and every action an agent takes is recorded and needs a person's approval. It does three things:
 
 1. **Code and IaC scanning.** It runs the scanners you already trust (Semgrep, Trivy, Checkov,
    tfsec, Gitleaks) on your repositories, puts their results in one format, and gives your team
