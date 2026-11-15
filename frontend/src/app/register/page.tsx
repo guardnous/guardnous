@@ -13,12 +13,9 @@ import {
   Building2,
   Users,
   Lock,
-  Fingerprint,
   Globe,
   ArrowRight,
   ArrowLeft,
-  Sparkles,
-  Crown,
   Zap,
   Check,
 } from "lucide-react";
@@ -28,50 +25,11 @@ import {
 /* ------------------------------------------------------------------ */
 
 const BENEFITS = [
-  { icon: Building2, label: "Multi-Organization Architecture", desc: "Isolate teams with organization-level separation" },
-  { icon: Users, label: "Enterprise RBAC", desc: "Granular roles, groups & permissions" },
-  { icon: Lock, label: "Zero-Trust Security", desc: "End-to-end encrypted scanning" },
-  { icon: Fingerprint, label: "SSO & MFA Ready", desc: "Okta, Azure AD, SAML 2.0" },
-  { icon: Globe, label: "Global Compliance", desc: "SOC 2, ISO 27001, GDPR" },
+  { icon: Shield, label: "Your scanners", desc: "Trivy, Checkov, Semgrep and more, with results in one queue" },
+  { icon: Zap, label: "Your model", desc: "Use a hosted model, or run one locally with Ollama" },
+  { icon: Lock, label: "Your infrastructure", desc: "Self-hosted with Docker Compose. You control where your data goes" },
+  { icon: Users, label: "Your team", desc: "Each organization has its own users, roles and data" },
 ];
-
-const PLANS = [
-  {
-    id: "free",
-    name: "Free",
-    price: "$0",
-    period: "forever",
-    icon: Zap,
-    features: ["Up to 5 repos", "Basic scanning", "Community support"],
-    gradient: "from-slate-50 to-slate-100",
-    border: "border-slate-200",
-    badge: null,
-  },
-  {
-    id: "professional",
-    name: "Professional",
-    price: "$49",
-    period: "/month",
-    icon: Sparkles,
-    features: ["Unlimited repos", "Advanced CVE intel", "Priority support"],
-    gradient: "from-orange-50 to-orange-100",
-    border: "border-orange-300",
-    badge: "Popular",
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    price: "Custom",
-    period: "contact us",
-    icon: Crown,
-    features: ["SSO & SAML", "Dedicated CSM", "SLA guarantee"],
-    gradient: "from-amber-50 to-orange-50",
-    border: "border-amber-300",
-    badge: null,
-  },
-] as const;
-
-type PlanId = (typeof PLANS)[number]["id"];
 
 const STEP_LABELS = ["Organization", "Admin Account", "Review & Create"] as const;
 
@@ -144,7 +102,6 @@ export default function RegisterPage() {
   /* ----- form state ----- */
   const [step, setStep] = useState(1);
   const [orgName, setOrgName] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState<PlanId>("free");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -156,7 +113,6 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   /* ----- domain (editable, auto-filled from email) ----- */
   const [domain, setDomain] = useState("");
@@ -265,7 +221,7 @@ export default function RegisterPage() {
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">GuardNous</h1>
           <p className="text-lg text-orange-200 mb-12">
-            Enterprise Cloud Security Platform
+            The open-source security platform with AI agents built in
           </p>
 
           {/* Benefits */}
@@ -286,21 +242,21 @@ export default function RegisterPage() {
             })}
           </div>
 
-          {/* Stats footer */}
+          {/* Footer */}
           <div className="mt-14 pt-8 border-t border-white/10 flex items-center gap-8">
             <div>
               <p className="text-2xl font-bold text-white">Free</p>
-              <p className="text-slate-400 text-xs">To Get Started</p>
+              <p className="text-slate-400 text-xs">Open source</p>
             </div>
             <div className="w-px h-10 bg-white/10" />
             <div>
-              <p className="text-2xl font-bold text-white">∞</p>
-              <p className="text-slate-400 text-xs">Repos Supported</p>
+              <p className="text-2xl font-bold text-white">Apache 2.0</p>
+              <p className="text-slate-400 text-xs">Licence</p>
             </div>
             <div className="w-px h-10 bg-white/10" />
             <div>
-              <p className="text-2xl font-bold text-white">100%</p>
-              <p className="text-slate-400 text-xs">Self-Hosted</p>
+              <p className="text-2xl font-bold text-white">Self-hosted</p>
+              <p className="text-slate-400 text-xs">On your infrastructure</p>
             </div>
           </div>
         </div>
@@ -416,46 +372,6 @@ export default function RegisterPage() {
                   </div>
                   <p className="mt-1 text-xs text-slate-500">
                     Auto-filled from admin email. Edit if your organization uses a different domain.
-                  </p>
-                </div>
-
-                {/* Plan selection */}
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-3">
-                    Select a Plan
-                  </label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {PLANS.map((plan) => {
-                      const Icon = plan.icon;
-                      const active = selectedPlan === plan.id;
-                      return (
-                        <button
-                          type="button"
-                          key={plan.id}
-                          onClick={() => setSelectedPlan(plan.id)}
-                          className={`relative p-3 rounded-xl border-2 text-left transition-all ${
-                            active
-                              ? "border-orange-500 bg-orange-50 ring-2 ring-orange-200"
-                              : `${plan.border} bg-gradient-to-b ${plan.gradient} hover:border-orange-300`
-                          }`}
-                        >
-                          {plan.badge && (
-                            <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold bg-orange-500 text-white px-2.5 py-0.5 rounded-full">
-                              {plan.badge}
-                            </span>
-                          )}
-                          <Icon className={`w-5 h-5 mb-2 ${active ? "text-orange-500" : "text-slate-500"}`} />
-                          <p className="text-sm font-semibold text-slate-900">{plan.name}</p>
-                          <p className="text-xs text-slate-500">
-                            {plan.price}{" "}
-                            <span className="text-slate-400">{plan.period}</span>
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="mt-2 text-xs text-slate-400">
-                    All plans start free during beta. Upgrade anytime.
                   </p>
                 </div>
 
@@ -642,33 +558,9 @@ export default function RegisterPage() {
                 <div className="rounded-xl border border-slate-200 divide-y divide-slate-100 overflow-hidden">
                   <SummaryRow label="Organization" value={orgName} />
                   <SummaryRow label="Domain" value={domain || "—"} />
-                  <SummaryRow
-                    label="Plan"
-                    value={PLANS.find((p) => p.id === selectedPlan)?.name ?? "Free"}
-                  />
                   <SummaryRow label="Admin Name" value={fullName} />
                   <SummaryRow label="Admin Email" value={email} />
                 </div>
-
-                {/* Terms of Service checkbox */}
-                <label className="flex items-start gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={agreedToTerms}
-                    onChange={(e) => setAgreedToTerms(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500 cursor-pointer"
-                  />
-                  <span className="text-sm text-slate-600 leading-snug">
-                    I agree to the{" "}
-                    <a href="/terms" className="text-orange-500 hover:text-orange-600 font-medium underline underline-offset-2">
-                      Terms of Service
-                    </a>{" "}
-                    and{" "}
-                    <a href="/privacy" className="text-orange-500 hover:text-orange-600 font-medium underline underline-offset-2">
-                      Privacy Policy
-                    </a>
-                  </span>
-                </label>
 
                 {/* Nav buttons */}
                 <div className="flex gap-3">
@@ -683,7 +575,7 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={handleCreate}
-                    disabled={loading || !agreedToTerms}
+                    disabled={loading}
                     className="flex-1 h-12 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
                   >
                     {loading ? (
@@ -766,8 +658,7 @@ export default function RegisterPage() {
 
           {/* Legal */}
           <p className="mt-6 text-center text-xs text-slate-400">
-            By creating an organization you agree to our Terms of Service and
-            Privacy Policy.
+            GuardNous is open source under the Apache 2.0 licence.
           </p>
         </div>
       </div>
