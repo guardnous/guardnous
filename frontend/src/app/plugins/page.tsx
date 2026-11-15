@@ -685,15 +685,15 @@ export default function PluginsPage() {
                 className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 text-left hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-950/50 hover:border-orange-300 dark:hover:border-orange-700 transition-all group flex flex-col h-full"
               >
                 {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
                     <div
-                      className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg shadow-orange-500/10`}
+                      className={`w-11 h-11 shrink-0 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg shadow-orange-500/10`}
                     >
                       <Icon className="w-5 h-5 text-white" />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                      <h3 className="text-sm font-semibold leading-snug text-slate-900 dark:text-slate-100 break-words">
                         {plugin.display_name}
                       </h3>
                       <span

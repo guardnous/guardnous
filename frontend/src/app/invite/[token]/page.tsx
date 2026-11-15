@@ -181,7 +181,7 @@ export default function InviteAcceptPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">GuardNous</h1>
-              <p className="text-sm text-slate-400">Enterprise Security Platform</p>
+              <p className="text-sm text-slate-400">Defend What Matters</p>
             </div>
           </div>
 

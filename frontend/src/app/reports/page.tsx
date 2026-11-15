@@ -49,6 +49,14 @@ const REPORT_TYPE_CONFIG: Record<
   string,
   { label: string; icon: React.ElementType; bg: string; text: string; badge: string }
 > = {
+  // Written automatically at the end of every scan.
+  security: {
+    label: "Scan Reports",
+    icon: FileText,
+    bg: "bg-blue-50 dark:bg-blue-500/10",
+    text: "text-blue-600 dark:text-blue-400",
+    badge: "bg-blue-50 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300",
+  },
   compliance: {
     label: "Compliance Reports",
     icon: ClipboardCheck,
@@ -210,12 +218,9 @@ export default function ReportsPage() {
   });
 
   const typeCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      compliance: 0,
-      vulnerability: 0,
-      executive: 0,
-      detailed: 0,
-    };
+    const counts: Record<string, number> = Object.fromEntries(
+      Object.keys(REPORT_TYPE_CONFIG).map((key) => [key, 0])
+    );
     reports.forEach((r) => {
       if (r.report_type in counts) counts[r.report_type]++;
     });
@@ -272,7 +277,7 @@ export default function ReportsPage() {
       ) : (
         <div className="space-y-6">
           {/* ── Report Type Overview Cards ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {(Object.keys(REPORT_TYPE_CONFIG) as string[]).map((key) => {
               const cfg = REPORT_TYPE_CONFIG[key];
               const Icon = cfg.icon;

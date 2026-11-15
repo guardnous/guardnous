@@ -11,7 +11,6 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  Cloud,
   Lock,
   Zap,
   Loader2,
@@ -24,9 +23,9 @@ import {
 } from "lucide-react";
 
 const FEATURES = [
-  { icon: Cloud, label: "Multi-Cloud Security", desc: "AWS, Azure, GCP scanning in one unified view" },
-  { icon: Zap, label: "Real-Time Scanning", desc: "14-stage enterprise security pipeline" },
-  { icon: Lock, label: "Self-Hosted & Private", desc: "Your data never leaves your infrastructure" },
+  { icon: Shield, label: "Your scanners", desc: "Trivy, Checkov, Semgrep and more, with results in one queue" },
+  { icon: Zap, label: "Your model", desc: "Use a hosted model, or run one locally with Ollama" },
+  { icon: Lock, label: "Your infrastructure", desc: "Self-hosted with Docker Compose. You control where your data goes" },
 ];
 
 export default function LoginPage() {
@@ -171,12 +170,12 @@ function LoginContent() {
             <img src="/logo.svg" alt="GuardNous" className="w-14 h-14 drop-shadow-[0_4px_12px_rgba(249,115,22,0.35)]" />
             <div>
               <h1 className="text-3xl font-bold text-white">GuardNous</h1>
-              <p className="text-sm text-slate-400">Enterprise Security Platform</p>
+              <p className="text-sm text-slate-400">Defend What Matters</p>
             </div>
           </div>
 
           <p className="text-lg text-slate-300 leading-relaxed mb-12 max-w-md">
-            Comprehensive infrastructure security scanning with CVE intelligence, compliance monitoring, and real-time threat detection.
+            The open-source security platform with AI agents built in.
           </p>
 
           <div className="space-y-6">
