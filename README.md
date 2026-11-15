@@ -121,32 +121,58 @@ The flows, the data model and the tech stack are in [How GuardNous works](docs/h
 ## Screenshots
 
 <details>
-<summary><b>Click to expand — 22 screens of the GuardNous UI</b></summary>
+<summary><b>Click to expand — 25 screens of the GuardNous UI, in the order you would use them</b></summary>
+
+**Sign in and overview**
 
 | | |
 |---|---|
-| **1. Login** | **2. Dashboard** |
-| ![Login](docs/screenshots/01-login.png) | ![Dashboard](docs/screenshots/02-dashboard.png) |
-| **3. VCS Integrations** | **4. Assessments** |
-| ![Integrations](docs/screenshots/03-integrations.png) | ![Assessments](docs/screenshots/04-assessments.png) |
-| **5. Task Monitor** | **6. Findings** |
-| ![Task Monitor](docs/screenshots/05-task-monitor.png) | ![Findings](docs/screenshots/06-findings.png) |
-| **7. CVEs** | **8. Reports** |
-| ![CVEs](docs/screenshots/07-cves.png) | ![Reports](docs/screenshots/08-reports.png) |
-| **9. Cloud Connectors** | **10. Connect AWS without access keys** |
-| ![Cloud Connectors](docs/screenshots/09-cloud-connectors.png) | ![Connect AWS](docs/screenshots/10-connect-aws-without-keys.png) |
-| **11. Cloud Posture — accounts per cloud** | **12. Cloud Posture — one account** |
-| ![Cloud Posture](docs/screenshots/11-cloud-posture.png) | ![Cloud Posture account](docs/screenshots/12-cloud-posture-account.png) |
-| **13. Cloud posture assessment pipeline** | **14. Governance** |
-| ![Posture pipeline](docs/screenshots/13-cloud-posture-pipeline.png) | ![Governance](docs/screenshots/14-governance.png) |
-| **15. IAM** | **16. AI Copilot** |
-| ![IAM](docs/screenshots/15-iam.png) | ![AI Copilot](docs/screenshots/16-ai-copilot.png) |
-| **17. Agent Run — approval with the exact change** | **18. Plugins** |
-| ![Agent run approval](docs/screenshots/17-agent-run-approval.png) | ![Plugins](docs/screenshots/18-plugins.png) |
-| **19. Settings** | **20. Admin — Users** |
-| ![Settings](docs/screenshots/19-settings.png) | ![Admin Users](docs/screenshots/20-admin-users.png) |
-| **21. Admin — Roles** | **22. Admin — Audit Logs** |
-| ![Admin Roles](docs/screenshots/21-admin-roles.png) | ![Audit Logs](docs/screenshots/22-admin-audit.png) |
+| **1. Sign in** | **2. Dashboard** |
+| ![Sign in](docs/screenshots/01-login.png) | ![Dashboard](docs/screenshots/02-dashboard.png) |
+
+**Connect your code and scan it**
+
+| | |
+|---|---|
+| **3. VCS integrations and repositories** | **4. Assessments** |
+| ![VCS integrations](docs/screenshots/03-vcs-integrations.png) | ![Assessments](docs/screenshots/04-assessments.png) |
+| **5. Assessment pipeline, stage by stage** | **6. Task monitor** |
+| ![Assessment pipeline](docs/screenshots/05-assessment-pipeline.png) | ![Task monitor](docs/screenshots/06-task-monitor.png) |
+| **7. Scheduled scans and reports** | **8. Findings with SLA deadlines** |
+| ![Schedules](docs/screenshots/07-schedules.png) | ![Findings](docs/screenshots/08-findings.png) |
+| **9. CVEs** | **10. Reports** |
+| ![CVEs](docs/screenshots/09-cves.png) | ![Reports](docs/screenshots/10-reports.png) |
+
+**Connect your cloud and check it**
+
+| | |
+|---|---|
+| **11. Cloud connectors** | **12. Connect AWS without access keys** |
+| ![Cloud connectors](docs/screenshots/11-cloud-connectors.png) | ![Connect AWS](docs/screenshots/12-connect-aws-without-keys.png) |
+| **13. Cloud posture — accounts per cloud** | **14. Cloud posture — one account** |
+| ![Cloud posture](docs/screenshots/13-cloud-posture.png) | ![Cloud posture account](docs/screenshots/14-cloud-posture-account.png) |
+| **15. Cloud posture assessment pipeline** | **16. Governance and compliance** |
+| ![Posture pipeline](docs/screenshots/15-cloud-posture-pipeline.png) | ![Governance](docs/screenshots/16-governance.png) |
+| **17. IAM** | |
+| ![IAM](docs/screenshots/17-iam.png) | |
+
+**AI agents, with approval**
+
+| | |
+|---|---|
+| **18. AI Copilot — an answer from live data, with a PDF** | **19. Agent run — waiting for approval of the exact change** |
+| ![AI Copilot](docs/screenshots/18-ai-copilot.png) | ![Agent run approval](docs/screenshots/19-agent-run-approval.png) |
+| **20. Agent run — a fix pull request, opened after approval** | **21. Scanner plugins** |
+| ![Fix pull request run](docs/screenshots/20-agent-run-fix-pull-request.png) | ![Plugins](docs/screenshots/21-plugins.png) |
+
+**Administration**
+
+| | |
+|---|---|
+| **22. Settings** | **23. Users** |
+| ![Settings](docs/screenshots/22-settings.png) | ![Users](docs/screenshots/23-admin-users.png) |
+| **24. Roles** | **25. Audit log** |
+| ![Roles](docs/screenshots/24-admin-roles.png) | ![Audit log](docs/screenshots/25-admin-audit.png) |
 
 Account numbers and user names in the screenshots are masked.
 
