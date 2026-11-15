@@ -232,4 +232,6 @@ every contributor. By contributing you agree your contribution is licensed under
 
 [Website](https://guardnous.github.io) · [Report a bug](https://github.com/guardnous/guardnous/issues) · [Request a feature](https://github.com/guardnous/guardnous/issues)
 
+Created by [Harsh Khajgiwale](https://github.com/hkhajgiwale)
+
 </div>
