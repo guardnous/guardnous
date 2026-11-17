@@ -235,6 +235,31 @@ class TestScheduleExecution:
         assert scan.scheduled is True and scan.organization_id == sched.organization_id
         assert sched.last_status == "queued" and sched.next_run_at is not None
 
+    def test_sweep_runs_a_due_schedule_once_and_never_rescans_old_scans(self, monkeypatch):
+        from datetime import datetime, timedelta, timezone
+        from app.models.scan import Scan
+        from app.tasks import jobs
+
+        db, queued = self._db(monkeypatch)
+        sched = self._seed(db)
+        now = datetime.now(timezone.utc)
+        # A scheduled scan that finished two days ago must not start another one by itself.
+        db.add(Scan(
+            organization_id=sched.organization_id, repository="acme/infra", status="completed",
+            scan_type="scheduled", scheduled=True, completed_at=now - timedelta(days=2),
+        ))
+        sched.next_run_at = now + timedelta(hours=3)
+        db.commit()
+
+        assert jobs.run_scheduled_scans.run() == {"queued": 0}
+        assert not queued
+
+        sched.next_run_at = now - timedelta(minutes=1)
+        db.commit()
+        assert jobs.run_scheduled_scans.run() == {"queued": 1}
+        assert jobs.run_scheduled_scans.run() == {"queued": 0}   # next_run_at has moved on
+        assert len(queued) == 1 and db.query(Scan).count() == 2
+
     @pytest.mark.parametrize("kwargs,expected", [
         ({"repo_enabled": False}, "no longer enabled"),
         ({"other_org_integration": True}, "not active in this organization"),

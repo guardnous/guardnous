@@ -1603,12 +1603,16 @@ MAX_CONCURRENT_SCHEDULED_SCANS = 10
 @celery_app.task(name="app.tasks.jobs.run_scheduled_scans")
 def run_scheduled_scans():
     """
-    Celery Beat task — runs hourly.
-    Finds repositories with scheduled scans enabled and triggers
-    a quick scan for each one that is due.
+    Celery Beat task, every five minutes: queue a scan for each enabled scan
+    schedule whose next run time has passed.
+
+    Schedules are the only thing that starts a scheduled scan. An earlier
+    sweep also re-scanned any repository that had ever had a scheduled scan;
+    it ignored the schedule's cron and whether the schedule still existed,
+    and once a scan was a day old it queued a new one on every run.
     """
     from app.models.scan import Scan
-    from sqlalchemy import text, func as sa_func
+    from sqlalchemy import func as sa_func
 
     with Session(sync_engine) as db:
         try:
@@ -1625,51 +1629,16 @@ def run_scheduled_scans():
                 return {"queued": 0, "skipped_reason": "concurrency_limit"}
 
             remaining_slots = MAX_CONCURRENT_SCHEDULED_SCANS - active_count
-
-            # Find the latest completed scan per (org, repo) — re-scan repos
-            # whose last scan is older than the configured interval (default 24h).
-            rows = db.execute(text("""
-                SELECT DISTINCT ON (organization_id, repository)
-                       id, organization_id, repository, integration_id
-                FROM scans
-                WHERE status = 'completed'
-                  AND scheduled = true
-                  AND completed_at < NOW() - INTERVAL '24 hours'
-                ORDER BY organization_id, repository, completed_at DESC
-            """)).fetchall()
-
             queued = 0
-            for row in rows:
-                if queued >= remaining_slots:
-                    logger.info("Reached concurrency slot limit (%d); deferring remaining repos", remaining_slots)
-                    break
-                scan = Scan(
-                    organization_id=row.organization_id,
-                    repository=row.repository,
-                    integration_id=row.integration_id,
-                    status="queued",
-                    scan_type="scheduled",
-                    scheduled=True,
-                )
-                db.add(scan)
-                db.flush()
-                run_quick_repo_scan.delay(
-                    scan_id=scan.id,
-                    integration_id=row.integration_id,
-                    repo_full_name=row.repository,
-                    org_id=row.organization_id,
-                )
-                queued += 1
-                logger.info("Scheduled re-scan for %s (org %s)", row.repository, row.organization_id)
 
-            db.commit()
-
-            # ── ScanSchedule-driven scans ──────────────────────────────
             try:
                 from app.models.scan_schedule import ScanSchedule
 
                 sched_queued = 0
                 for sched in db.query(ScanSchedule).filter(ScanSchedule.enabled == True).all():
+                    if sched_queued >= remaining_slots:
+                        logger.info("Reached concurrency slot limit (%d); deferring remaining schedules", remaining_slots)
+                        break
                     if _schedule_is_due(sched):
                         sched_queued += int(_fire_scan_schedule(db, sched)["status"] == "queued")
                 db.commit()
